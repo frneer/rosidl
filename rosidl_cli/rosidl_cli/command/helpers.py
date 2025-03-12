@@ -94,7 +94,8 @@ def legacy_generator_arguments_file(
     interface_files,
     include_paths,
     templates_path,
-    output_path
+    output_path,
+    type_descriptions=None
 ):
     """
     Generate a temporary rosidl generator arguments file.
@@ -109,23 +110,25 @@ def legacy_generator_arguments_file(
     :param templates_path: Path to the templates directory for the
       generator script this arguments are for
     :param output_path: Path to the output directory for generated code
+    :param type_descriptions: Optional list of paths to type description files
     """
-    idl_tuples = idl_tuples_from_interface_files(interface_files)
-    interface_dependencies = dependencies_from_include_paths(include_paths)
-    output_path = os.path.abspath(output_path)
-    templates_path = os.path.abspath(templates_path)
+
+    arguments = {}
+    arguments['package_name'] = package_name
+    arguments['output_dir'] = os.path.abspath(output_path)
+    arguments['template_dir'] = os.path.abspath(templates_path)
+    arguments['idl_tuples'] = idl_tuples_from_interface_files(interface_files)
+    arguments['ros_interface_dependencies'] = dependencies_from_include_paths(include_paths)
+    # TODO(hidmic): re-enable output file caching
+    arguments['target_dependencies'] = []
+    # TODO(Fran): Does it hurt having it for all cases as an empty list?
+    if type_descriptions:
+        arguments['type_descriptions'] = type_descriptions
+
     # NOTE(hidmic): named temporary files cannot be opened twice on Windows,
     # so close it and manually remove it when leaving the context
     with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmp:
-        tmp.write(json.dumps({
-            'package_name': package_name,
-            'output_dir': output_path,
-            'template_dir': templates_path,
-            'idl_tuples': idl_tuples,
-            'ros_interface_dependencies': interface_dependencies,
-            # TODO(hidmic): re-enable output file caching
-            'target_dependencies': []
-        }))
+        tmp.write(json.dumps(arguments))
     path_to_file = os.path.abspath(tmp.name)
     try:
         yield path_to_file
