@@ -29,7 +29,8 @@ class GenerateCpp(GenerateCommandExtension):
         package_name,
         interface_files,
         include_paths,
-        output_path
+        output_path,
+        type_descriptions=None
     ):
         package_share_path = \
             pathlib.Path(get_package_share_directory('rosidl_generator_cpp'))
@@ -52,12 +53,14 @@ class GenerateCpp(GenerateCommandExtension):
                 output_path=output_path / 'tmp',
             ))
 
+        # TODO(Fran): Do we need visibility control files?
         # Generate code
         with legacy_generator_arguments_file(
             package_name=package_name,
             interface_files=idl_interface_files,
             include_paths=include_paths,
             templates_path=templates_path,
-            output_path=output_path
+            output_path=output_path,
+            type_descriptions=type_descriptions
         ) as path_to_arguments_file:
             return generate_cpp(path_to_arguments_file)
