@@ -39,6 +39,10 @@ class GenerateCommand(Command):
             dest='typesupports', action='append', default=[],
             help='Target type supports for generation.')
         parser.add_argument(
+            '-td', '--type-description', metavar='TYPE_DESCRIPTION',
+            dest='type_descriptions', action='append', default=[],
+            help='Target type descriptions for generation.')
+        parser.add_argument(
             '-I', '--include-path', type=pathlib.Path, metavar='PATH',
             dest='include_paths', action='append', default=[],
             help='Paths to include dependency interface definition files from.')
@@ -57,5 +61,6 @@ class GenerateCommand(Command):
             include_paths=args.include_paths,
             output_path=args.output_path,
             types=args.types,
-            typesupports=args.typesupports
+            typesupports=args.typesupports,
+            type_descriptions=args.type_descriptions
         )
