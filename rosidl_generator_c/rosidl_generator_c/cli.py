@@ -82,7 +82,8 @@ class GenerateC(GenerateCommandExtension):
             include_paths=include_paths,
             templates_path=templates_path,
             output_path=output_path,
-            type_description_tuples=type_description_tuples
+            type_description_tuples=type_description_tuples,
+            ros_interface_files=interface_files
         ) as path_to_arguments_file:
             generated_files.extend(generate_c(path_to_arguments_file))
 
