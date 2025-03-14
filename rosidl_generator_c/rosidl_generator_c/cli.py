@@ -16,9 +16,9 @@ import pathlib
 
 from ament_index_python import get_package_share_directory
 from rosidl_cli.command.generate.extensions import GenerateCommandExtension
-from rosidl_cli.command.helpers import generate_visibility_control_file
-from rosidl_cli.command.helpers import legacy_generator_arguments_file
+from rosidl_cli.command.helpers import generate_visibility_control_file, legacy_generator_arguments_file, split_interface_files, type_description_tuples_from_interface_files
 from rosidl_cli.command.translate.api import translate
+from rosidl_cli.command.hash.api import generate_type_hashes
 
 from rosidl_generator_c import generate_c
 
@@ -30,7 +30,8 @@ class GenerateC(GenerateCommandExtension):
         package_name,
         interface_files,
         include_paths,
-        output_path
+        output_path,
+        type_descriptions=None
     ):
         generated_files = []
 
@@ -39,13 +40,7 @@ class GenerateC(GenerateCommandExtension):
         templates_path = package_share_path / 'resource'
 
         # Normalize interface definition format to .idl
-        idl_interface_files = []
-        non_idl_interface_files = []
-        for path in interface_files:
-            if not path.endswith('.idl'):
-                non_idl_interface_files.append(path)
-            else:
-                idl_interface_files.append(path)
+        idl_interface_files, non_idl_interface_files = split_interface_files(interface_files)
         if non_idl_interface_files:
             idl_interface_files.extend(translate(
                 package_name=package_name,
@@ -54,6 +49,18 @@ class GenerateC(GenerateCommandExtension):
                 output_format='idl',
                 output_path=output_path / 'tmp',
             ))
+
+        # Only in those generators that need td
+        if not type_descriptions:
+            type_descriptions = generate_type_hashes(
+                package_name=package_name,
+                interface_files=idl_interface_files,
+                include_paths=include_paths,
+                output_path=output_path
+            )
+
+        type_description_tuples = type_description_tuples_from_interface_files(interface_files, output_path)
+        # TODO(Fran): Do we need include paths?
 
         # Generate visibility control file
         visibility_control_file_template_path = \
@@ -74,7 +81,8 @@ class GenerateC(GenerateCommandExtension):
             interface_files=idl_interface_files,
             include_paths=include_paths,
             templates_path=templates_path,
-            output_path=output_path
+            output_path=output_path,
+            type_description_tuples=type_description_tuples
         ) as path_to_arguments_file:
             generated_files.extend(generate_c(path_to_arguments_file))
 

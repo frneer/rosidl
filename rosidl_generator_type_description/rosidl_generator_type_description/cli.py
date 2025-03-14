@@ -15,29 +15,25 @@
 import pathlib
 
 from ament_index_python import get_package_share_directory
-from rosidl_cli.command.generate.extensions import GenerateCommandExtension
-from rosidl_cli.command.helpers import legacy_generator_arguments_file, split_interface_files, type_description_tuples_from_interface_files
+from rosidl_cli.command.hash.extensions import HashCommandExtension
+from rosidl_cli.command.helpers import legacy_generator_arguments_file, split_interface_files
 from rosidl_cli.command.translate.api import translate
-from rosidl_cli.command.hash.api import generate_type_hashes
 
-from rosidl_generator_cpp import generate_cpp
+from rosidl_generator_type_description import generate_type_hash
 
 
-class GenerateCpp(GenerateCommandExtension):
-
-    def generate(
+class HashTypeDescription(HashCommandExtension):
+    def generate_type_hashes(
         self,
         package_name,
         interface_files,
         include_paths,
         output_path,
-        type_descriptions=None
     ):
         package_share_path = \
-            pathlib.Path(get_package_share_directory('rosidl_generator_cpp'))
+            pathlib.Path(get_package_share_directory('rosidl_generator_type_description'))
         templates_path = package_share_path / 'resource'
 
-        # Normalize interface definition format to .idl
         idl_interface_files, non_idl_interface_files = split_interface_files(interface_files)
         if non_idl_interface_files:
             idl_interface_files.extend(translate(
@@ -48,16 +44,6 @@ class GenerateCpp(GenerateCommandExtension):
                 output_path=output_path / 'tmp',
             ))
 
-        if not type_descriptions:
-            generate_type_hashes(
-                package_name=package_name,
-                interface_files=idl_interface_files,
-                include_paths=include_paths,
-                output_path=output_path
-            )
-        type_description_tuples = type_description_tuples_from_interface_files(interface_files, output_path)
-
-        # TODO(Fran): Do we need visibility control files?
         # Generate code
         with legacy_generator_arguments_file(
             package_name=package_name,
@@ -65,6 +51,5 @@ class GenerateCpp(GenerateCommandExtension):
             include_paths=include_paths,
             templates_path=templates_path,
             output_path=output_path,
-            type_description_tuples=type_description_tuples,
         ) as path_to_arguments_file:
-            return generate_cpp(path_to_arguments_file)
+            return generate_type_hash(path_to_arguments_file)

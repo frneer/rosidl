@@ -94,19 +94,25 @@ def generate(
             extra_kwargs['type_descriptions'] = type_descriptions
         return extra_kwargs
 
+    generated_files = []
     if len(extensions) == 1:
         extension = extensions[0]
         extra_kwargs = get_extra_kwargs(extension)
-        return [extension.generate(
-            package_name, interface_files, include_paths,
-            output_path=output_path,
-            **extra_kwargs
-        )]
+        generated_files.append(
+            extension.generate(
+                package_name, interface_files, include_paths,
+                output_path=output_path,
+                **extra_kwargs
+            )
+        )
     else:
         for extension in extensions:
             extra_kwargs = get_extra_kwargs(extension)
-            extension.generate(
-                package_name, interface_files, include_paths,
-                output_path=output_path / extension.name,
-                **extra_kwargs
+            generated_files.append(
+                extension.generate(
+                    package_name, interface_files, include_paths,
+                    output_path=output_path / extension.name,
+                    **extra_kwargs
+                    )
             )
+        return generated_files

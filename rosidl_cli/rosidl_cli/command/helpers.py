@@ -87,6 +87,19 @@ def idl_tuples_from_interface_files(interface_files):
     return idl_tuples
 
 
+def type_description_tuples_from_interface_files(interface_files, output_path):
+    """Express ROS interface type description hash file paths as type_description tuples.
+
+    A type_description tuple as defined in rosidl_generator_type_description_generate_interfaces.cmake.
+    """
+    type_description_tuples = []
+    for path in interface_files:
+        _, path = interface_path_as_tuple(path)
+        filedir = path.parent.name
+        type_description_tuples.append(f'{path.as_posix()}:{output_path}/{filedir}/{path.stem}.json')
+    return type_description_tuples
+
+
 @contextlib.contextmanager
 def legacy_generator_arguments_file(
     *,
@@ -95,7 +108,7 @@ def legacy_generator_arguments_file(
     include_paths,
     templates_path,
     output_path,
-    type_descriptions=None
+    **kwargs
 ):
     """
     Generate a temporary rosidl generator arguments file.
@@ -110,7 +123,8 @@ def legacy_generator_arguments_file(
     :param templates_path: Path to the templates directory for the
       generator script this arguments are for
     :param output_path: Path to the output directory for generated code
-    :param type_descriptions: Optional list of paths to type description files
+    :param kwargs: Additional arguments to be included in the generator
+      arguments file, they'll be included as they are passed without any processing
     """
 
     arguments = {}
@@ -121,9 +135,9 @@ def legacy_generator_arguments_file(
     arguments['ros_interface_dependencies'] = dependencies_from_include_paths(include_paths)
     # TODO(hidmic): re-enable output file caching
     arguments['target_dependencies'] = []
-    # TODO(Fran): Does it hurt having it for all cases as an empty list?
-    if type_descriptions:
-        arguments['type_descriptions'] = type_descriptions
+    # Add additional arguments directly to the output file.
+    # This allows extending the generator arguments file externally
+    arguments.update(kwargs)
 
     # NOTE(hidmic): named temporary files cannot be opened twice on Windows,
     # so close it and manually remove it when leaving the context
@@ -165,3 +179,19 @@ def generate_visibility_control_file(
 
     with open(output_path, 'w') as fd:
         fd.write(content)
+
+def split_interface_files(interface_files):
+    """
+    Split interface files into IDL and non-IDL files.
+
+    :param interface_files: List of interface files.
+    :returns: Tuple of IDL and non-IDL files.
+    """
+    idl_interface_files = []
+    non_idl_interface_files = []
+    for path in interface_files:
+        if not path.endswith('.idl'):
+            non_idl_interface_files.append(path)
+        else:
+            idl_interface_files.append(path)
+    return idl_interface_files, non_idl_interface_files
