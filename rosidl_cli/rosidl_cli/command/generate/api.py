@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 import os
 import pathlib
 
-from .extensions import load_type_extensions
-from .extensions import load_typesupport_extensions
+from .extensions import GenerateCommandExtension, load_type_extensions, load_typesupport_extensions
 
 
 def generate(
@@ -26,7 +26,8 @@ def generate(
     include_paths=None,
     output_path=None,
     types=None,
-    typesupports=None
+    typesupports=None,
+    type_descriptions=None
 ):
     """
     Generate source code from interface definition files.
@@ -57,6 +58,7 @@ def generate(
         source code files, defaults to the current working directory
     :param types: optional list of type representations to generate
     :param typesupports: optional list of type supports to generate
+    :param type_descriptions: Optional list of paths to type description files
     :returns: list of lists of paths to generated source code files,
         one group per type or type support extension invoked
     """
@@ -85,15 +87,32 @@ def generate(
     else:
         os.makedirs(output_path, exist_ok=True)
 
-    if len(extensions) > 1:
-        return [
+    def get_extra_kwargs(extension: GenerateCommandExtension):
+        extra_kwargs = {}
+        sig = inspect.signature(extension.generate)
+        if "type_descriptions" in sig.parameters:
+            extra_kwargs['type_descriptions'] = type_descriptions
+        return extra_kwargs
+
+    generated_files = []
+    if len(extensions) == 1:
+        extension = extensions[0]
+        extra_kwargs = get_extra_kwargs(extension)
+        generated_files.append(
             extension.generate(
                 package_name, interface_files, include_paths,
-                output_path=output_path / extension.name)
-            for extension in extensions
-        ]
-
-    return [extensions[0].generate(
-        package_name, interface_files,
-        include_paths, output_path
-    )]
+                output_path=output_path,
+                **extra_kwargs
+            )
+        )
+    else:
+        for extension in extensions:
+            extra_kwargs = get_extra_kwargs(extension)
+            generated_files.append(
+                extension.generate(
+                    package_name, interface_files, include_paths,
+                    output_path=output_path / extension.name,
+                    **extra_kwargs
+                    )
+            )
+        return generated_files
