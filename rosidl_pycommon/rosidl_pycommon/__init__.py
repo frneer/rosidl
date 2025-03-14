@@ -54,6 +54,31 @@ def get_newest_modification_time(target_dependencies):
             newest_timestamp = ts
     return newest_timestamp
 
+def render_visibility_control_file(package_name, template_path, base_output_path):
+    """
+    Render a visibility control file from a template.
+
+    :param package_name: Name of the ROS package for which
+      to generate the file.
+    :param template_path: Path to template visibility control file.
+      May contain @PROJECT_NAME@ and @PROJECT_NAME_UPPER@ placeholders,
+      to be substituted by the package name, accordingly.
+    :param base_output_path: Base output path for the generated file.
+
+    :returns: Path to the generated visibility control file.
+    """
+    with open(template_path, 'r') as fd:
+        content = fd.read()
+
+    content = content.replace('@PROJECT_NAME@', package_name)
+    content = content.replace('@PROJECT_NAME_UPPER@', package_name.upper())
+
+    # Use stem to remove the .in extension
+    output_path = pathlib.Path(base_output_path) / 'msg' / template_path.stem
+    with open(output_path, 'w') as fd:
+        fd.write(content)
+
+    return output_path
 
 def generate_files(
     generator_arguments_file, mapping, additional_context=None,
@@ -67,7 +92,17 @@ def generate_files(
             'Could not find template: ' + template_filename
 
     latest_target_timestamp = get_newest_modification_time(args['target_dependencies'])
-    generated_files = []
+
+    # Generate visibility control files if any
+    generated_files = \
+        [render_visibility_control_file(
+            args['package_name'],
+            template,
+            args['output_dir']
+        )
+            for template in template_basepath.iterdir()
+            if template.is_file() and 'visibility_control' in template.name
+        ]
 
     type_description_files = {}
     for description_tuple in args.get('type_description_tuples', []):
