@@ -16,9 +16,9 @@ import pathlib
 
 from ament_index_python import get_package_share_directory
 from rosidl_cli.command.generate.extensions import GenerateCommandExtension
-from rosidl_cli.command.helpers import generate_visibility_control_file
-from rosidl_cli.command.helpers import legacy_generator_arguments_file
+    from rosidl_cli.command.helpers import generate_visibility_control_file, legacy_generator_arguments_file, type_description_tuples_from_interface_files
 from rosidl_cli.command.translate.api import translate
+from rosidl_cli.command.hash.api import generate_type_hashes
 
 from rosidl_generator_c import generate_c
 
@@ -30,7 +30,8 @@ class GenerateC(GenerateCommandExtension):
         package_name,
         interface_files,
         include_paths,
-        output_path
+        output_path,
+        type_descriptions=None
     ):
         generated_files = []
 
@@ -55,6 +56,16 @@ class GenerateC(GenerateCommandExtension):
                 output_path=output_path / 'tmp',
             ))
 
+        if not type_descriptions:
+            type_descriptions = generate_type_hashes(
+                package_name=package_name,
+                interface_files=idl_interface_files,
+                include_paths=include_paths,
+                output_path=output_path
+            )
+
+        type_description_tuples = type_description_tuples_from_interface_files(interface_files, output_path)
+
         # Generate visibility control file
         visibility_control_file_template_path = \
             templates_path / 'rosidl_generator_c__visibility_control.h.in'
@@ -74,7 +85,9 @@ class GenerateC(GenerateCommandExtension):
             interface_files=idl_interface_files,
             include_paths=include_paths,
             templates_path=templates_path,
-            output_path=output_path
+            output_path=output_path,
+            type_description_tuples=type_description_tuples,
+            ros_interface_files=interface_files
         ) as path_to_arguments_file:
             generated_files.extend(generate_c(path_to_arguments_file))
 

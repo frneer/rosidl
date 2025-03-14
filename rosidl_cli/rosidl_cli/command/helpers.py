@@ -87,6 +87,19 @@ def idl_tuples_from_interface_files(interface_files):
     return idl_tuples
 
 
+def type_description_tuples_from_interface_files(interface_files, output_path):
+    """Express ROS interface type description hash file paths as type_description tuples.
+
+    A type_description tuple as defined in rosidl_generator_type_description_generate_interfaces.cmake.
+    """
+    type_description_tuples = []
+    for path in interface_files:
+        _, path = interface_path_as_tuple(path)
+        filedir = path.parent.name
+        type_description_tuples.append(f'{path.as_posix()}:{output_path}/{filedir}/{path.stem}.json')
+    return type_description_tuples
+
+
 @contextlib.contextmanager
 def legacy_generator_arguments_file(
     *,
@@ -94,7 +107,8 @@ def legacy_generator_arguments_file(
     interface_files,
     include_paths,
     templates_path,
-    output_path
+    output_path,
+    **kwargs
 ):
     """
     Generate a temporary rosidl generator arguments file.
@@ -109,23 +123,26 @@ def legacy_generator_arguments_file(
     :param templates_path: Path to the templates directory for the
       generator script this arguments are for
     :param output_path: Path to the output directory for generated code
+    :param kwargs: Additional arguments to be included in the generator
+      arguments file, they'll be included as they are passed without any processing
     """
-    idl_tuples = idl_tuples_from_interface_files(interface_files)
-    interface_dependencies = dependencies_from_include_paths(include_paths)
-    output_path = os.path.abspath(output_path)
-    templates_path = os.path.abspath(templates_path)
+
+    arguments = {}
+    arguments['package_name'] = package_name
+    arguments['output_dir'] = os.path.abspath(output_path)
+    arguments['template_dir'] = os.path.abspath(templates_path)
+    arguments['idl_tuples'] = idl_tuples_from_interface_files(interface_files)
+    arguments['ros_interface_dependencies'] = dependencies_from_include_paths(include_paths)
+    # TODO(hidmic): re-enable output file caching
+    arguments['target_dependencies'] = []
+    # NOTE(frneer): Add additional arguments directly to the output file.
+    # This allows extending the generator argument file externally
+    arguments.update(kwargs)
+
     # NOTE(hidmic): named temporary files cannot be opened twice on Windows,
     # so close it and manually remove it when leaving the context
     with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmp:
-        tmp.write(json.dumps({
-            'package_name': package_name,
-            'output_dir': output_path,
-            'template_dir': templates_path,
-            'idl_tuples': idl_tuples,
-            'ros_interface_dependencies': interface_dependencies,
-            # TODO(hidmic): re-enable output file caching
-            'target_dependencies': []
-        }))
+        tmp.write(json.dumps(arguments))
     path_to_file = os.path.abspath(tmp.name)
     try:
         yield path_to_file
