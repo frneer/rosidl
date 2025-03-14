@@ -104,17 +104,6 @@ add_custom_command(
   VERBATIM
 )
 
-# generate header to switch between export and import for a specific package
-set(_visibility_control_file
-  "${_output_path}/msg/rosidl_typesupport_introspection_c__visibility_control.h")
-string(TOUPPER "${PROJECT_NAME}" PROJECT_NAME_UPPER)
-configure_file(
-  "${rosidl_typesupport_introspection_c_TEMPLATE_DIR}/rosidl_typesupport_introspection_c__visibility_control.h.in"
-  "${_visibility_control_file}"
-  @ONLY
-)
-list(APPEND _generated_msg_header_files "${_visibility_control_file}")
-
 set(_target_suffix "__rosidl_typesupport_introspection_c")
 
 add_library(${rosidl_generate_interfaces_TARGET}${_target_suffix} ${rosidl_typesupport_introspection_c_LIBRARY_TYPE}
