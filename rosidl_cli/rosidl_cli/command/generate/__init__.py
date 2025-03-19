@@ -39,8 +39,8 @@ class GenerateCommand(Command):
             dest='typesupports', action='append', default=[],
             help='Target type supports for generation.')
         parser.add_argument(
-            '-td', '--type-description', metavar='TYPE_DESCRIPTION',
-            dest='type_descriptions', action='append', default=[],
+            '-td', '--type-description-file', metavar='PATH',
+            dest='type_description_files', action='append', default=[],
             help='Target type descriptions for generation.')
         parser.add_argument(
             '-I', '--include-path', type=pathlib.Path, metavar='PATH',
@@ -62,5 +62,5 @@ class GenerateCommand(Command):
             output_path=args.output_path,
             types=args.types,
             typesupports=args.typesupports,
-            type_descriptions=args.type_descriptions
+            type_description_files=args.type_description_files
         )

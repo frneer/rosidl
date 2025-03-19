@@ -30,7 +30,7 @@ class GenerateCommandExtension(Extension):
         interface_files,
         include_paths,
         output_path,
-        type_descriptions=None,
+        type_description_files=None,
     ):
         """
         Generate source code.
@@ -44,7 +44,7 @@ class GenerateCommandExtension(Extension):
         :param include_paths: list of paths to include dependency interface
           definition files from.
         :param output_path: path to directory to hold generated source code files
-        :param type_descriptions: Optional list of paths to type description files
+        :param type_description_files: Optional list of paths to type description files
         :returns: list of paths to generated source files
         """
         raise NotImplementedError()

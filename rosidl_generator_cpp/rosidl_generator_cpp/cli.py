@@ -17,9 +17,10 @@ import pathlib
 from ament_index_python import get_package_share_directory
 from rosidl_cli.command.generate.extensions import GenerateCommandExtension
 from rosidl_cli.command.helpers import (
+    build_type_description_tuples,
+    generate_visibility_control_file,
     legacy_generator_arguments_file,
     split_interface_files,
-    type_description_tuples_from_interface_files
 )
 from rosidl_cli.command.translate.api import translate
 from rosidl_cli.command.hash.api import generate_type_hashes
@@ -35,7 +36,7 @@ class GenerateCpp(GenerateCommandExtension):
         interface_files,
         include_paths,
         output_path,
-        type_descriptions=None
+        type_description_files=None
     ):
         package_share_path = \
             pathlib.Path(get_package_share_directory('rosidl_generator_cpp'))
@@ -52,14 +53,29 @@ class GenerateCpp(GenerateCommandExtension):
                 output_path=output_path / 'tmp',
             ))
 
-        if not type_descriptions:
-            generate_type_hashes(
+        if not type_description_files:
+            type_description_files = generate_type_hashes(
                 package_name=package_name,
                 interface_files=idl_interface_files,
                 include_paths=include_paths,
                 output_path=output_path
             )
-        type_description_tuples = type_description_tuples_from_interface_files(interface_files, output_path)
+
+        type_description_tuples = build_type_description_tuples(idl_interface_files, type_description_files)
+
+        generated_files = []
+        # Generate visibility control file
+        visibility_control_file_template_path = \
+            templates_path / 'rosidl_generator_cpp__visibility_control.hpp.in'
+        visibility_control_file_path = \
+            output_path / 'msg' / 'rosidl_generator_cpp__visibility_control.hpp'
+
+        generate_visibility_control_file(
+            package_name=package_name,
+            template_path=visibility_control_file_template_path,
+            output_path=visibility_control_file_path
+        )
+        generated_files.append(visibility_control_file_path)
 
         # Generate code
         with legacy_generator_arguments_file(
@@ -68,6 +84,8 @@ class GenerateCpp(GenerateCommandExtension):
             include_paths=include_paths,
             templates_path=templates_path,
             output_path=output_path,
-            type_description_tuples=type_description_tuples,
+            extra_args= {
+                "type_description_tuples": type_description_tuples,
+            }
         ) as path_to_arguments_file:
             return generate_cpp(path_to_arguments_file)

@@ -13,10 +13,11 @@
 # limitations under the License.
 
 import pathlib
+import os
 
 from ament_index_python import get_package_share_directory
 from rosidl_cli.command.hash.extensions import HashCommandExtension
-from rosidl_cli.command.helpers import legacy_generator_arguments_file, split_interface_files
+from rosidl_cli.command.helpers import legacy_generator_arguments_file, split_interface_files, package_name_from_interface_file_path
 from rosidl_cli.command.translate.api import translate
 
 from rosidl_generator_type_description import generate_type_hash
@@ -44,6 +45,22 @@ class HashTypeDescription(HashCommandExtension):
                 output_path=output_path / 'tmp',
             ))
 
+        def package_paths_from_include_paths(include_paths):
+            """
+            Collect package paths, typically share paths, from include paths.
+
+            Package paths are absolute paths prefixed by the name of package followed by a colon ':'.
+            """
+            return list(
+                {
+                    f'{package_name_from_interface_file_path(path)}:{path.parents[1]}'
+                    for include_path in map(os.path.abspath, include_paths)
+                    for path in pathlib.Path(include_path).glob('**/*.idl')
+                }
+            )
+
+        include_path_tuples = package_paths_from_include_paths(include_paths)
+
         # Generate code
         with legacy_generator_arguments_file(
             package_name=package_name,
@@ -51,5 +68,11 @@ class HashTypeDescription(HashCommandExtension):
             include_paths=include_paths,
             templates_path=templates_path,
             output_path=output_path,
+            # NOTE(frneer): This include_paths mirrors what's done
+            # In the cmake version of generator, which uses a different format
+            # than the include_paths of this rosidl_cli
+            extra_args = {
+                "include_paths": include_path_tuples,
+            }
         ) as path_to_arguments_file:
             return generate_type_hash(path_to_arguments_file)

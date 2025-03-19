@@ -27,7 +27,7 @@ def generate(
     output_path=None,
     types=None,
     typesupports=None,
-    type_descriptions=None
+    type_description_files=None
 ):
     """
     Generate source code from interface definition files.
@@ -58,7 +58,7 @@ def generate(
         source code files, defaults to the current working directory
     :param types: optional list of type representations to generate
     :param typesupports: optional list of type supports to generate
-    :param type_descriptions: Optional list of paths to type description files
+    :param type_description_files: Optional list of paths to type description files
     :returns: list of lists of paths to generated source code files,
         one group per type or type support extension invoked
     """
@@ -90,8 +90,8 @@ def generate(
     def get_extra_kwargs(extension: GenerateCommandExtension):
         extra_kwargs = {}
         sig = inspect.signature(extension.generate)
-        if "type_descriptions" in sig.parameters:
-            extra_kwargs['type_descriptions'] = type_descriptions
+        if "type_description_files" in sig.parameters:
+            extra_kwargs['type_description_files'] = type_description_files
         return extra_kwargs
 
     generated_files = []
@@ -113,6 +113,6 @@ def generate(
                     package_name, interface_files, include_paths,
                     output_path=output_path / extension.name,
                     **extra_kwargs
-                    )
+                )
             )
         return generated_files

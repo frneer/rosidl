@@ -56,14 +56,16 @@ def generate_type_hashes(
     else:
         pathlib.Path.mkdir(output_path, parents=True, exist_ok=True)
 
-    return [
-        extension.generate_type_hashes(
+    generated_hashes = []
+    for extension in extensions:
+        generated_hashes.extend(extension.generate_type_hashes(
             package_name,
             interface_files,
             include_paths,
             output_path=output_path,
-        )
-        for extension in extensions]
+        ))
+
+    return generated_hashes
 
 
 

@@ -87,18 +87,27 @@ def idl_tuples_from_interface_files(interface_files):
     return idl_tuples
 
 
-def type_description_tuples_from_interface_files(interface_files, output_path):
-    """Express ROS interface type description hash file paths as type_description tuples.
-
-    A type_description tuple as defined in rosidl_generator_type_description_generate_interfaces.cmake.
+def build_type_description_tuples(idl_interface_files, type_description_files):
     """
-    type_description_tuples = []
-    for path in interface_files:
-        _, path = interface_path_as_tuple(path)
-        filedir = path.parent.name
-        type_description_tuples.append(f'{path.as_posix()}:{output_path}/{filedir}/{path.stem}.json')
-    return type_description_tuples
+    Create type description tuples from IDL interface files and type descriptions.
 
+    :param idl_interface_files: List of IDL interface files either with or without prefix
+    :param type_description_files: List of type description files
+    :return: List of type description tuples of the form 'idl_file_path:type_description_file'
+    """
+    def get_type_description_file(idl_file, type_description_files):
+        for type_description_file in type_description_files:
+            if pathlib.Path(idl_file).stem == pathlib.Path(type_description_file).stem:
+                return type_description_file
+
+    type_description_tuples = []
+    for idl_file in idl_interface_files:
+        type_description_file = get_type_description_file(idl_file, type_description_files)
+        assert type_description_file is not None, \
+            f"Type description file not found for {idl_file}"
+        _, path = interface_path_as_tuple(idl_file)
+        type_description_tuples.append(f"{path}:{type_description_file}")
+    return type_description_tuples
 
 @contextlib.contextmanager
 def legacy_generator_arguments_file(
@@ -108,7 +117,7 @@ def legacy_generator_arguments_file(
     include_paths,
     templates_path,
     output_path,
-    **kwargs
+    extra_args=None
 ):
     """
     Generate a temporary rosidl generator arguments file.
@@ -123,7 +132,7 @@ def legacy_generator_arguments_file(
     :param templates_path: Path to the templates directory for the
       generator script this arguments are for
     :param output_path: Path to the output directory for generated code
-    :param kwargs: Additional arguments to be included in the generator
+    :param extra_args: Dict of additional arguments to be included in the generator
       arguments file, they'll be included as they are passed without any processing
     """
 
@@ -137,7 +146,7 @@ def legacy_generator_arguments_file(
     arguments['target_dependencies'] = []
     # NOTE(frneer): Add additional arguments directly to the output file.
     # This allows extending the generator argument file externally
-    arguments.update(kwargs)
+    arguments.update(extra_args or {})
 
     # NOTE(hidmic): named temporary files cannot be opened twice on Windows,
     # so close it and manually remove it when leaving the context

@@ -17,10 +17,11 @@ import pathlib
 from ament_index_python import get_package_share_directory
 from rosidl_cli.command.generate.extensions import GenerateCommandExtension
 from rosidl_cli.command.helpers import (
+    build_type_description_tuples,
     generate_visibility_control_file,
     legacy_generator_arguments_file,
     split_interface_files,
-    type_description_tuples_from_interface_files
+    interface_path_as_tuple
 )
 from rosidl_cli.command.translate.api import translate
 from rosidl_cli.command.hash.api import generate_type_hashes
@@ -36,7 +37,7 @@ class GenerateC(GenerateCommandExtension):
         interface_files,
         include_paths,
         output_path,
-        type_descriptions=None
+        type_description_files=None
     ):
         generated_files = []
 
@@ -55,15 +56,15 @@ class GenerateC(GenerateCommandExtension):
                 output_path=output_path / 'tmp',
             ))
 
-        if not type_descriptions:
-            type_descriptions = generate_type_hashes(
+        if not type_description_files:
+            type_description_files = generate_type_hashes(
                 package_name=package_name,
                 interface_files=idl_interface_files,
                 include_paths=include_paths,
                 output_path=output_path
             )
 
-        type_description_tuples = type_description_tuples_from_interface_files(interface_files, output_path)
+        type_description_tuples = build_type_description_tuples(idl_interface_files, type_description_files)
 
         # Generate visibility control file
         visibility_control_file_template_path = \
@@ -78,6 +79,20 @@ class GenerateC(GenerateCommandExtension):
         )
         generated_files.append(visibility_control_file_path)
 
+        def ros_interface_file_from_idl(idl_file):
+            """
+            Return the absolute path of the ROS interface file generated from the given IDL file.
+
+            :param idl_file: The IDL file to generate the ROS interface file from. Can be prefix:relative/path/to/file.idl
+                or relative/path/to/file.idl
+            :return: The absolute path of the ROS interface file generated from the given IDL file.
+            """
+            _, path = interface_path_as_tuple(idl_file)
+            return path.absolute()
+
+        ros_interface_files = [str(ros_interface_file_from_idl(idl_file)) for idl_file in idl_interface_files]
+
+
         # Generate code
         with legacy_generator_arguments_file(
             package_name=package_name,
@@ -85,8 +100,10 @@ class GenerateC(GenerateCommandExtension):
             include_paths=include_paths,
             templates_path=templates_path,
             output_path=output_path,
-            type_description_tuples=type_description_tuples,
-            ros_interface_files=interface_files
+            extra_args = {
+                "type_description_tuples": type_description_tuples,
+                "ros_interface_files": ros_interface_files
+            }
         ) as path_to_arguments_file:
             generated_files.extend(generate_c(path_to_arguments_file))
 
