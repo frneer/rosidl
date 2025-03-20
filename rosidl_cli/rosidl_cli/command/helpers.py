@@ -103,8 +103,8 @@ def build_type_description_tuples(idl_interface_files, type_description_files):
     type_description_tuples = []
     for idl_file in idl_interface_files:
         type_description_file = get_type_description_file(idl_file, type_description_files)
-        assert type_description_file is not None, \
-            f"Type description file not found for {idl_file}"
+        if type_description_file is None:
+            raise ValueError(f"Type description file not found for {idl_file}")
         _, path = interface_path_as_tuple(idl_file)
         type_description_tuples.append(f"{path}:{type_description_file}")
     return type_description_tuples
