@@ -20,7 +20,7 @@ from .api import generate_type_hashes
 
 
 class HashCommand(Command):
-    """Generate the type hashes from interface definition files."""
+    """Generate type description hashes from interface definition files."""
 
     name = 'hash'
 

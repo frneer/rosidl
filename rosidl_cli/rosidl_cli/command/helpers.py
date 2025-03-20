@@ -189,7 +189,7 @@ def generate_visibility_control_file(
     with open(output_path, 'w') as fd:
         fd.write(content)
 
-def split_interface_files(interface_files):
+def split_idl_interface_files(interface_files):
     """Split interface files into IDL and non-IDL files."""
     idl_interface_files = []
     non_idl_interface_files = []
