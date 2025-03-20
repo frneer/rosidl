@@ -22,6 +22,19 @@ from rosidl_cli.command.translate.api import translate
 
 from rosidl_generator_type_description import generate_type_hash
 
+def package_paths_from_include_paths(include_paths):
+    """
+    Collect package paths, typically share paths, from include paths.
+
+    Package paths are absolute paths prefixed by the name of package followed by a colon ':'.
+    """
+    return list(
+        {
+            f'{package_name_from_interface_file_path(path)}:{path.parents[1]}'
+            for include_path in map(os.path.abspath, include_paths)
+            for path in pathlib.Path(include_path).glob('**/*.idl')
+        }
+    )
 
 class HashTypeDescription(HashCommandExtension):
     def generate_type_hashes(
@@ -44,20 +57,6 @@ class HashTypeDescription(HashCommandExtension):
                 output_format='idl',
                 output_path=output_path / 'tmp',
             ))
-
-        def package_paths_from_include_paths(include_paths):
-            """
-            Collect package paths, typically share paths, from include paths.
-
-            Package paths are absolute paths prefixed by the name of package followed by a colon ':'.
-            """
-            return list(
-                {
-                    f'{package_name_from_interface_file_path(path)}:{path.parents[1]}'
-                    for include_path in map(os.path.abspath, include_paths)
-                    for path in pathlib.Path(include_path).glob('**/*.idl')
-                }
-            )
 
         include_path_tuples = package_paths_from_include_paths(include_paths)
 
