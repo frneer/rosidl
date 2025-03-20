@@ -87,32 +87,36 @@ def generate(
     else:
         os.makedirs(output_path, exist_ok=True)
 
-    def get_extra_kwargs(extension: GenerateCommandExtension):
-        extra_kwargs = {}
-        sig = inspect.signature(extension.generate)
-        if "type_description_files" in sig.parameters:
-            extra_kwargs['type_description_files'] = type_description_files
-        return extra_kwargs
+    def extra_kwargs(func: callable, **kwargs):
+        matched_kwargs = {}
+        signature = inspect.signature(func)
+        for name, value in kwargs.items():
+            if name in signature.parameters:
+                if signature.parameters[name].kind not in [
+                    inspect.Parameter.POSITIONAL_ONLY,
+                    inspect.Parameter.VAR_POSITIONAL,
+                    inspect.Parameter.VAR_KEYWORD
+                ]:
+                    matched_kwargs[name] = value
+        return matched_kwargs
 
     generated_files = []
     if len(extensions) == 1:
         extension = extensions[0]
-        extra_kwargs = get_extra_kwargs(extension)
         generated_files.append(
             extension.generate(
                 package_name, interface_files, include_paths,
                 output_path=output_path,
-                **extra_kwargs
+                **extra_kwargs(extension.generate, type_description_files=type_description_files)
             )
         )
     else:
         for extension in extensions:
-            extra_kwargs = get_extra_kwargs(extension)
             generated_files.append(
                 extension.generate(
                     package_name, interface_files, include_paths,
                     output_path=output_path / extension.name,
-                    **extra_kwargs
+                    **extra_kwargs(extension.generate, type_description_files=type_description_files)
                 )
             )
         return generated_files
