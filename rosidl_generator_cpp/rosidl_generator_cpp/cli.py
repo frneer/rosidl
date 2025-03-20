@@ -19,7 +19,8 @@ from rosidl_cli.command.generate.extensions import GenerateCommandExtension
 from rosidl_cli.command.helpers import (
     build_type_description_tuples,
     generate_visibility_control_file,
-    legacy_generator_arguments_file,
+    generator_arguments_file,
+    legacy_generator_arguments,
     split_idl_interface_files,
 )
 from rosidl_cli.command.translate.api import translate
@@ -78,14 +79,14 @@ class GenerateCpp(GenerateCommandExtension):
         generated_files.append(visibility_control_file_path)
 
         # Generate code
-        with legacy_generator_arguments_file(
-            package_name=package_name,
-            interface_files=idl_interface_files,
-            include_paths=include_paths,
-            templates_path=templates_path,
-            output_path=output_path,
-            extra_args= {
-                "type_description_tuples": type_description_tuples,
-            }
+        with generator_arguments_file(
+            **legacy_generator_arguments(
+                package_name=package_name,
+                interface_files=idl_interface_files,
+                include_paths=include_paths,
+                templates_path=templates_path,
+                output_path=output_path
+            ),
+            type_description_tuples=type_description_tuples,
         ) as path_to_arguments_file:
             return generate_cpp(path_to_arguments_file)

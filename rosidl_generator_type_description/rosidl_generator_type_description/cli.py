@@ -17,7 +17,12 @@ import os
 
 from ament_index_python import get_package_share_directory
 from rosidl_cli.command.hash.extensions import HashCommandExtension
-from rosidl_cli.command.helpers import legacy_generator_arguments_file, split_idl_interface_files, package_name_from_interface_file_path
+from rosidl_cli.command.helpers import (
+    generator_arguments_file,
+    legacy_generator_arguments,
+    split_idl_interface_files,
+    package_name_from_interface_file_path,
+)
 from rosidl_cli.command.translate.api import translate
 
 from rosidl_generator_type_description import generate_type_hash
@@ -61,17 +66,14 @@ class HashTypeDescription(HashCommandExtension):
         include_path_tuples = package_paths_from_include_paths(include_paths)
 
         # Generate code
-        with legacy_generator_arguments_file(
-            package_name=package_name,
-            interface_files=idl_interface_files,
-            include_paths=include_paths,
-            templates_path=templates_path,
-            output_path=output_path,
-            # NOTE(frneer): This include_paths mirrors what's done
-            # In the cmake version of generator, which uses a different format
-            # than the include_paths of this rosidl_cli
-            extra_args = {
-                "include_paths": include_path_tuples,
-            }
+        with generator_arguments_file(
+            **legacy_generator_arguments(
+                package_name=package_name,
+                interface_files=idl_interface_files,
+                include_paths=include_paths,
+                templates_path=templates_path,
+                output_path=output_path,
+            ),
+            include_paths= include_path_tuples
         ) as path_to_arguments_file:
             return generate_type_hash(path_to_arguments_file)

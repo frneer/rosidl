@@ -122,17 +122,36 @@ def ros_interface_file_from_idl(idl_file):
 
 
 @contextlib.contextmanager
-def legacy_generator_arguments_file(
-    *,
-    package_name,
-    interface_files,
-    include_paths,
-    templates_path,
-    output_path,
-    extra_args=None
+def generator_arguments_file(**kwargs):
+    """
+    Create a temporary file containing generator arguments.
+
+    :param kwargs: Generator arguments to be written to the file.
+    :yields: Path to the temporary file containing the generator arguments.
+    """
+    # NOTE(hidmic): named temporary files cannot be opened twice on Windows,
+    # so close it and manually remove it when leaving the context
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmp:
+        tmp.write(json.dumps(kwargs))
+    path_to_file = os.path.abspath(tmp.name)
+    try:
+        yield path_to_file
+    finally:
+        try:
+            os.unlink(path_to_file)
+        except FileNotFoundError:
+            pass
+
+def legacy_generator_arguments(
+        *,
+        package_name,
+        interface_files,
+        include_paths,
+        templates_path,
+        output_path,
 ):
     """
-    Generate a temporary rosidl generator arguments file.
+    Returns a dict containing the generator arguments for the legacy ROSIDL generator.
 
     :param package_name: Name of the ROS package for which to generate code
     :param interface_files: Relative paths to ROS interface definition files,
@@ -144,10 +163,7 @@ def legacy_generator_arguments_file(
     :param templates_path: Path to the templates directory for the
       generator script this arguments are for
     :param output_path: Path to the output directory for generated code
-    :param extra_args: Dict of additional arguments to be included in the generator
-      arguments file, they'll be included as they are passed without any processing
     """
-
     arguments = {}
     arguments['package_name'] = package_name
     arguments['output_dir'] = os.path.abspath(output_path)
@@ -156,22 +172,35 @@ def legacy_generator_arguments_file(
     arguments['ros_interface_dependencies'] = dependencies_from_include_paths(include_paths)
     # TODO(hidmic): re-enable output file caching
     arguments['target_dependencies'] = []
-    # NOTE(frneer): Add additional arguments directly to the output file.
-    # This allows extending the generator argument file externally
-    arguments.update(extra_args or {})
 
-    # NOTE(hidmic): named temporary files cannot be opened twice on Windows,
-    # so close it and manually remove it when leaving the context
-    with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmp:
-        tmp.write(json.dumps(arguments))
-    path_to_file = os.path.abspath(tmp.name)
-    try:
-        yield path_to_file
-    finally:
-        try:
-            os.unlink(path_to_file)
-        except FileNotFoundError:
-            pass
+    return arguments
+
+@contextlib.contextmanager
+def legacy_generator_arguments_file(
+    *,
+    package_name,
+    interface_files,
+    include_paths,
+    templates_path,
+    output_path
+):
+    """
+    Create a temporary file containing legacy arguments only.
+
+    This context manager is kept for backwards compatibility only, use
+    `generator_arguments_file` instead.
+    """
+
+    with generator_arguments_file(
+        **legacy_generator_arguments(
+            package_name=package_name,
+            interface_files=interface_files,
+            include_paths=include_paths,
+            templates_path=templates_path,
+            output_path=output_path
+        )
+    ) as path_to_arguments_file:
+        yield path_to_arguments_file
 
 
 def generate_visibility_control_file(

@@ -19,7 +19,8 @@ from rosidl_cli.command.generate.extensions import GenerateCommandExtension
 from rosidl_cli.command.helpers import (
     build_type_description_tuples,
     generate_visibility_control_file,
-    legacy_generator_arguments_file,
+    generator_arguments_file,
+    legacy_generator_arguments,
     ros_interface_file_from_idl,
     split_idl_interface_files
 )
@@ -84,16 +85,16 @@ class GenerateC(GenerateCommandExtension):
 
 
         # Generate code
-        with legacy_generator_arguments_file(
-            package_name=package_name,
-            interface_files=idl_interface_files,
-            include_paths=include_paths,
-            templates_path=templates_path,
-            output_path=output_path,
-            extra_args = {
-                "type_description_tuples": type_description_tuples,
-                "ros_interface_files": ros_interface_files
-            }
+        with generator_arguments_file(
+            **legacy_generator_arguments(
+                package_name=package_name,
+                interface_files=idl_interface_files,
+                include_paths=include_paths,
+                templates_path=templates_path,
+                output_path=output_path,
+            ),
+            type_description_tuples=type_description_tuples,
+            ros_interface_files=ros_interface_files
         ) as path_to_arguments_file:
             generated_files.extend(generate_c(path_to_arguments_file))
 
