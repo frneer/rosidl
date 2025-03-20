@@ -20,8 +20,8 @@ from rosidl_cli.command.helpers import (
     build_type_description_tuples,
     generate_visibility_control_file,
     legacy_generator_arguments_file,
-    split_idl_interface_files,
-    interface_path_as_tuple
+    ros_interface_file_from_idl,
+    split_idl_interface_files
 )
 from rosidl_cli.command.translate.api import translate
 from rosidl_cli.command.hash.api import generate_type_hashes
@@ -79,16 +79,6 @@ class GenerateC(GenerateCommandExtension):
         )
         generated_files.append(visibility_control_file_path)
 
-        def ros_interface_file_from_idl(idl_file):
-            """
-            Return the absolute path of the ROS interface file generated from the given IDL file.
-
-            :param idl_file: The IDL file to generate the ROS interface file from. Can be prefix:relative/path/to/file.idl
-                or relative/path/to/file.idl
-            :return: The absolute path of the ROS interface file generated from the given IDL file.
-            """
-            _, path = interface_path_as_tuple(idl_file)
-            return path.absolute()
 
         ros_interface_files = [str(ros_interface_file_from_idl(idl_file)) for idl_file in idl_interface_files]
 

@@ -109,6 +109,18 @@ def build_type_description_tuples(idl_interface_files, type_description_files):
         type_description_tuples.append(f"{path}:{type_description_file}")
     return type_description_tuples
 
+def ros_interface_file_from_idl(idl_file):
+    """
+    Returns the absolute path of the ROS interface file generated from the given IDL file.
+
+    :param idl_file: The IDL file to generate the ROS interface file from. Can be prefix:relative/path/to/file.idl
+        or relative/path/to/file.idl
+    :return: The absolute path of the ROS interface file generated from the given IDL file.
+    """
+    prefix, path = interface_path_as_tuple(idl_file)
+    return (prefix / path).absolute()
+
+
 @contextlib.contextmanager
 def legacy_generator_arguments_file(
     *,
