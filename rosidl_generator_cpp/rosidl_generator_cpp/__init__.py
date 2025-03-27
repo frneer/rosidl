@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from ast import literal_eval
+from pathlib import Path
 
 from rosidl_parser.definition import AbstractGenericString
 from rosidl_parser.definition import AbstractNestedType
@@ -25,8 +26,26 @@ from rosidl_parser.definition import BoundedSequence
 from rosidl_parser.definition import FLOATING_POINT_TYPES
 from rosidl_parser.definition import NamespacedType
 from rosidl_parser.definition import UnboundedSequence
-from rosidl_pycommon import generate_files
+from rosidl_pycommon import expand_template, generate_files, read_generator_arguments
 
+def generate_visibility_header(generator_arguments_file):
+    args = read_generator_arguments(generator_arguments_file)
+    template_basepath = Path(args['template_dir'])
+    output_path = Path(args['output_dir'])
+    visibility_control_template_file = template_basepath / 'msg' / 'rosidl_generator_cpp__visibility_control.hpp.em'
+    visibility_control_file = output_path / 'msg' / 'rosidl_generator_cpp__visibility_control.hpp'
+    data = {
+        'package_name': args['package_name'],
+    }
+
+    expand_template(
+        template_name=visibility_control_template_file.name,
+        data=data,
+        output_file=visibility_control_file,
+        template_basepath=template_basepath,
+    )
+
+    return visibility_control_file
 
 def generate_cpp(generator_arguments_file):
     mapping = {
@@ -36,9 +55,15 @@ def generate_cpp(generator_arguments_file):
         'idl__traits.hpp.em': 'detail/%s__traits.hpp',
         'idl__type_support.hpp.em': 'detail/%s__type_support.hpp',
     }
-    return generate_files(
+    generated_files = []
+    generated_files.append(
+        generate_visibility_header(generator_arguments_file)
+    )
+    generated_files.extend(generate_files(
         generator_arguments_file, mapping,
         post_process_callback=prefix_with_bom_if_necessary)
+    )
+    return generated_files
 
 
 def prefix_with_bom_if_necessary(content):

@@ -64,20 +64,6 @@ class GenerateCpp(GenerateCommandExtension):
 
         type_description_tuples = build_type_description_tuples(idl_interface_files, type_description_files)
 
-        generated_files = []
-        # Generate visibility control file
-        visibility_control_file_template_path = \
-            templates_path / 'rosidl_generator_cpp__visibility_control.hpp.in'
-        visibility_control_file_path = \
-            output_path / 'msg' / 'rosidl_generator_cpp__visibility_control.hpp'
-
-        generate_visibility_control_file(
-            package_name=package_name,
-            template_path=visibility_control_file_template_path,
-            output_path=visibility_control_file_path
-        )
-        generated_files.append(visibility_control_file_path)
-
         # Generate code
         with generator_arguments_file(
             **legacy_generator_arguments(
