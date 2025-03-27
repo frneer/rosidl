@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
+
 from rosidl_generator_type_description import parse_rihs_string
 from rosidl_generator_type_description import RIHS01_HASH_VALUE_SIZE
 from rosidl_parser.definition import AbstractGenericString
@@ -25,8 +27,26 @@ from rosidl_parser.definition import CHARACTER_TYPES
 from rosidl_parser.definition import NamespacedType
 from rosidl_parser.definition import OCTET_TYPE
 from rosidl_pycommon import convert_camel_case_to_lower_case_underscore
-from rosidl_pycommon import generate_files
+from rosidl_pycommon import expand_template, generate_files, read_generator_arguments
 
+def generate_visibility_header(generator_arguments_file):
+    args = read_generator_arguments(generator_arguments_file)
+    template_basepath = Path(args['template_dir'])
+    output_path = Path(args['output_dir'])
+    visibility_control_template_file = template_basepath / 'msg' / 'rosidl_generator_c__visibility_control.h.em'
+    visibility_control_file = output_path / 'msg' / 'rosidl_generator_c__visibility_control.h'
+    data = {
+        'package_name': args['package_name'],
+    }
+
+    expand_template(
+        template_name=visibility_control_template_file.name,
+        data=data,
+        output_file=visibility_control_file,
+        template_basepath=template_basepath,
+    )
+
+    return visibility_control_file
 
 def generate_c(generator_arguments_file, disable_description_codegen=False):
     mapping = {
@@ -38,12 +58,19 @@ def generate_c(generator_arguments_file, disable_description_codegen=False):
         'idl__type_support.c.em': 'detail/%s__type_support.c',
         'idl__type_support.h.em': 'detail/%s__type_support.h',
     }
-    return generate_files(
+
+    generated_files = []
+    generated_files.append(
+        generate_visibility_header(generator_arguments_file)
+    )
+    generated_files.extend(generate_files(
         generator_arguments_file, mapping,
         post_process_callback=prefix_with_bom_if_necessary,
         additional_context={
             'disable_description_codegen': disable_description_codegen
         })
+    )
+    return generated_files
 
 
 def prefix_with_bom_if_necessary(content):

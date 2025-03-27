@@ -67,19 +67,6 @@ class GenerateC(GenerateCommandExtension):
 
         type_description_tuples = build_type_description_tuples(idl_interface_files, type_description_files)
 
-        # Generate visibility control file
-        visibility_control_file_template_path = \
-            templates_path / 'rosidl_generator_c__visibility_control.h.in'
-        visibility_control_file_path = \
-            output_path / 'msg' / 'rosidl_generator_c__visibility_control.h'
-
-        generate_visibility_control_file(
-            package_name=package_name,
-            template_path=visibility_control_file_template_path,
-            output_path=visibility_control_file_path
-        )
-        generated_files.append(visibility_control_file_path)
-
 
         ros_interface_files = [str(ros_interface_file_from_idl(idl_file)) for idl_file in idl_interface_files]
 
